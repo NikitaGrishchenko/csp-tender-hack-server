@@ -1,0 +1,117 @@
+version: "3.7"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.8.8-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${DOCKER_MQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${DOCKER_MQ_PASSWORD}
+    ports:
+      - 5672:5672
+      - 15672:15672
+    restart: always
+
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - pg-data:/var/lib/postgresql/data/
+    restart: always
+    environment:
+      POSTGRES_DB: ${DOCKER_DB_NAME}
+      POSTGRES_USER: ${DOCKER_DB_USER}
+      POSTGRES_PASSWORD: ${DOCKER_DB_PASSWORD}
+    ports:
+      - 5432:5432
+
+  app:
+    image: ${DOCKER_PROJECT_IMAGE}
+    command: sh -c "
+      ./wait-for db:5432 &&
+      poetry run task collectstatic --clear &&
+      poetry run task migrate &&
+      poetry run task defaultadmin &&
+      poetry run task defaultfixtures &&
+      poetry run task gunicorn"
+    volumes:
+      - static:/var/www/app/public/static
+      - media:/var/www/app/public/media
+      - logs:/var/www/app/private/logs
+      - ./.env:/var/www/app/.env
+    restart: always
+    depends_on:
+      - db
+      - rabbitmq
+
+  celery_worker:
+    command: sh -c "
+      ./wait-for rabbitmq:5672 &&
+      ./wait-for app:8000 &&
+      poetry run task celery"
+    volumes:
+      - media:/var/www/app/public/media
+      - ./.env:/var/www/app/.env
+    depends_on:
+      - app
+      - db
+      - rabbitmq
+    image: ${DOCKER_PROJECT_IMAGE}
+    restart: always
+
+  celery_beat:
+    command: sh -c "
+      ./wait-for rabbitmq:5672 &&
+      ./wait-for app:8000 &&
+      poetry run task scheduler"
+    volumes:
+      - media:/var/www/app/public/media
+      - ./.env:/var/www/app/.env
+    depends_on:
+      - app
+      - db
+      - rabbitmq
+    image: ${DOCKER_PROJECT_IMAGE}
+    restart: always
+
+  nginx:
+    image: nginx:1.17.6-alpine
+    volumes:
+      - static:/var/www/app/public/static
+      - media:/var/www/app/public/media
+      - logs:/var/www/app/private/logs
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./robots.txt:/etc/nginx/conf.d/robots.txt
+      - ./ssl/certificate.crt:/var/www/app/public/keys/certificate.crt
+      - ./ssl/private_key.key:/var/www/app/public/keys/private_key.key
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - app
+
+volumes:
+  static:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${PROJECT_PATH}/${DOCKER_STATIC_DIR}"
+      o: bind
+  media:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${PROJECT_PATH}/${DOCKER_MEDIA_DIR}"
+      o: bind
+  pg-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${PROJECT_PATH}/${DOCKER_DB_DIR}"
+      o: bind
+  logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: "${PROJECT_PATH}/${DOCKER_LOG_DIR}"
+      o: bind

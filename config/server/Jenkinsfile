@@ -1,0 +1,61 @@
+pipeline {
+    agent {
+        node {
+            label "docker"
+        }
+    }
+
+    environment {
+        ANSIBLE_AWX_HOST = "AWX"
+    }
+
+    stages {
+        stage("Notification for begin build") {
+            steps {
+                discordSend(
+                    footer: "starting...",
+                    link: env.BUILD_URL,
+                    title: "$JOB_NAME #$BUILD_NUMBER",
+                    result: "UNSTABLE",
+                    webhookURL: "$DISCORD_WEBHOOK_URL",
+                )
+                slackSend(message: "starting...\n$env.BUILD_URL\n$JOB_NAME #$BUILD_NUMBER")
+            }
+        }
+        stage("Deploying with Ansible") {
+            steps {
+                withVault(vaultSecrets: [
+                    [path: "web-projects/$VAULT_NAME", secretValues: [
+                        [envVar: "ANSIBLE_AWX_JOB", vaultKey: "awx_job"]
+                    ]]
+                ]) {
+                    echo "$VAULT_NAME"
+                    ansibleTower(
+                        towerServer: "${ env.ANSIBLE_AWX_HOST }",
+                        templateType: "job",
+                        jobTemplate: "${ ANSIBLE_AWX_JOB }",
+                        importTowerLogs: true,
+                        removeColor: false,
+                        verbose: true,
+                        async :false,
+                    )
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            discordSend(
+                description: "Status: **${currentBuild.currentResult}**",
+                footer: "finished",
+                link: env.BUILD_URL,
+                result: currentBuild.currentResult,
+                unstable: false,
+                title: "$JOB_NAME #$BUILD_NUMBER",
+                webhookURL: "$DISCORD_WEBHOOK_URL",
+            )
+            slackSend(message: "Finished\n$currentBuild.currentResult\n$JOB_NAME #$BUILD_NUMBER")
+        }
+    }
+}

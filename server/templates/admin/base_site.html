@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}" sizes="48x48">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/5.6.55/css/materialdesignicons.min.css">
+  <style>
+    .m-1 {
+      margin: 5px;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+    }
+  </style>
+{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name">
+    <a href="{% url 'admin:index' %}" class="sidebar-link">
+      <img src="{% static 'images/logo.png' %}" height="70px" style="padding-right: 10px;">
+      <div>
+        <span class="sidebar-link-label">
+          {{ site_header|default:_('Django administration') }}
+        </span>
+      </div>
+    </a>
+  </h1>
+{% endblock %}
+
+{% block userlinks %}
+  <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+    {% url 'schedule:upload-schedule' as schedule_upload %}
+    {% if schedule_upload %}
+      <a
+            class="m-1"
+            href="{{schedule_upload}}"
+      >
+        <i class="mdi mdi-file-upload-outline"></i>
+        {% trans 'Загрузить расписание' %}
+      </a>
+    {% endif %}
+    {% url 'schedule:clear-schedule' as schedule_clear %}
+    {% if schedule_clear %}
+      <a
+          class="m-1"
+          href="{{schedule_clear}}"
+      >
+        <i class="mdi mdi-trash-can-outline"></i>
+        {% trans 'Очиститиь расписание' %}
+      </a>
+    {% endif %}
+    {% if user.has_usable_password %}
+      <a
+        class="m-1"
+        href="{% url 'admin:password_change' %}"
+      >
+        <i class="mdi mdi-key-change"></i>
+        {% translate 'Change password' %}
+      </a>
+    {% endif %}
+
+    <a
+      class="m-1"
+      href="{% url 'admin:logout' %}"
+      style="margin-right: 0;"
+    >
+      <i class="mdi mdi-logout"></i>
+      {% translate 'Log out' %}
+    </a>
+  </div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+
+{% block footer %}
+{{ block.super }}
+{% endblock %}

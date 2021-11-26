@@ -1,0 +1,203 @@
+# TODO: template nginx conf
+
+- hosts: all
+  become: yes
+  vars:
+    # Переопределяем в AWX
+    vault_name: "vault_name"
+
+    # Секреты
+    secrets: "{{ lookup('hashi_vault', 'secret=web-projects/data/{{ vault_name }}:') }}"
+    secrets_docker_registry: "{{ lookup('hashi_vault', 'secret=CI-CD/data/nexus:') }}"
+    https_secrets: "{{ lookup('hashi_vault', 'secret=global/data/https:') }}"
+    email_secrets: "{{ lookup('hashi_vault', 'secret=global/data/email:') }}"
+
+    # Сертификаты https
+    https_private_key: "{{ https_secrets|json_query('data.private_key') }}"
+    https_certificate: "{{ https_secrets|json_query('data.certificate') }}"
+
+    # Конфиги докера
+    docker_registry_url: "{{ secrets_docker_registry|json_query('data.url') }}"
+    docker_registry_group_port: "{{ secrets_docker_registry|json_query('data.group_port') }}"
+    docker_registry_private_port: "{{ secrets_docker_registry|json_query('data.private_port') }}"
+    docker_registry_username: "{{ secrets_docker_registry|json_query('data.user') }}"
+    docker_registry_password: "{{ secrets_docker_registry|json_query('data.password') }}"
+
+    # Базовые конфиги
+    project_base_path: /var/www
+    site_domain: "{{ secrets|json_query('data.site_domain') }}"
+    secret_key: "{{ secrets|json_query('data.secret_key') }}"
+    project_name: "{{ secrets|json_query('data.project_name') }}"
+    project_version: "{{ secrets|json_query('data.project_version') }}"
+    default_fixtures: "{{ secrets|json_query('data.default_fixtures')|default('', true) }}"
+    project_path: "{{ project_base_path }}/{{ project_name }}"
+
+    # Конфиги email
+    email_port: "{{ email_secrets|json_query('data.port') }}"
+    email_host: "{{ email_secrets|json_query('data.host') }}"
+    email_protocol: "{{ email_secrets|json_query('data.protocol') }}"
+    email_name: "{{ secrets|json_query('data.email_name') }}"
+
+    # Конфиги для ansible
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_become_password: "{{ secrets|json_query('data.ssh_password') }}"
+
+    # Конфиги базы данных
+    db_type: "{{ secrets|json_query('data.db_type') }}"
+    db_host: "{{ secrets|json_query('data.db_host') }}"
+    db_port: "{{ secrets|json_query('data.db_port') }}"
+    db_name: "{{ secrets|json_query('data.db_name') }}"
+    db_user: "{{ secrets|json_query('data.db_user') }}"
+    db_password: "{{ secrets|json_query('data.db_password') }}"
+
+    # Конфиги Rabbit MQ
+    mq_user: "{{ secrets|json_query('data.mq_user') }}"
+    mq_password: "{{ secrets|json_query('data.mq_password') }}"
+
+    # Конфиги администратора по умолчанию
+    admin_username: "{{ secrets|json_query('data.admin_username') }}"
+    admin_password: "{{ secrets|json_query('data.admin_password') }}"
+    admin_email: "{{ secrets|json_query('data.admin_email') }}"
+
+    # Конфиги docker volumes
+    docker_db_dir: "docker/db"
+    docker_logs_dir: "docker/logs"
+    docker_media_dir: "docker/media"
+    docker_static_dir: "docker/static"
+
+  tasks:
+    - name: Create project directory
+      file:
+        path: "{{ project_path }}"
+        state: directory
+
+    - name: Copy docker-compose.yml
+      copy:
+        src: ../docker/docker-compose.yml
+        dest: "{{ project_path }}"
+
+    - name: Copy nginx.conf
+      copy:
+        src: ../docker/nginx.conf
+        dest: "{{ project_path }}"
+
+    - name: Copy default.conf
+      copy:
+        src: ../docker/default.conf
+        dest: "{{ project_path }}"
+
+    - name: Copy robots.txt
+      copy:
+        src: ../robots.txt
+        dest: "{{ project_path }}"
+
+    - name: Copy .env.example
+      copy:
+        src: ../../.env.example
+        dest: "{{ project_path }}"
+
+    - name: Create .env file
+      # https://github.com/ushahidi/ansible-dotenv-generator
+      include_role:
+        name: dotenv-generator
+      vars:
+        dotenv_sample: "{{ project_path }}/.env.example"
+        env:
+          SITE_DOMAIN: "{{ site_domain }}"
+          SECRET_KEY: "{{ secret_key }}"
+          DOCKER_DB_NAME: "{{ db_name }}"
+          DOCKER_DB_USER: "{{ db_user }}"
+          DOCKER_DB_PASSWORD: "{{ db_password }}"
+          DATABASE_URL: "{{ db_type }}://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
+          DOCKER_LOG_DIR: "{{ docker_logs_dir }}"
+          DOCKER_MEDIA_DIR: "{{ docker_media_dir }}"
+          DOCKER_STATIC_DIR: "{{ docker_static_dir }}"
+          DOCKER_DB_DIR: "{{ docker_db_dir }}"
+          PROJECT_PATH: "{{ project_path }}"
+          DOCKER_PROJECT_IMAGE: "{{ docker_registry_url }}:{{ docker_registry_private_port }}/{{ project_name }}:{{ project_version }}"
+          ADMIN_USERNAME: "{{ admin_username }}"
+          ADMIN_PASSWORD: "{{ admin_password }}"
+          ADMIN_EMAIL: "{{ admin_email }}"
+          EMAIL_URL: "{{ email_protocol }}://{{ email_host }}:{{ email_port }}"
+          EMAIL_NAME: "{{ email_name }}"
+          EMAIL_MANAGER: "{{ admin_email }}"
+          DEFAULT_FIXTURES: "{{ default_fixtures }}"
+          DOCKER_MQ_USER: "{{ mq_user }}"
+          DOCKER_MQ_PASSWORD: "{{ mq_password }}"
+          RABBIT_MQ_URL: "amqp://{{ mq_user }}:{{ mq_password }}@rabbitmq:5672"
+        dest: "{{ project_path }}/.env"
+
+    - name: Create logs directory
+      file:
+        path: "{{ project_path }}/{{ docker_logs_dir }}"
+        state: directory
+
+    - name: Create media directory
+      file:
+        path: "{{ project_path }}/{{ docker_media_dir }}"
+        state: directory
+
+    - name: Create static directory
+      file:
+        path: "{{ project_path }}/{{ docker_static_dir }}"
+        state: directory
+
+    - name: Create db directory
+      file:
+        path: "{{ project_path }}/{{ docker_db_dir }}"
+        state: directory
+
+    - name: Create ssl directory
+      file:
+        path: "{{ project_path }}/ssl"
+        state: directory
+
+    - name: Create https private key file
+      copy:
+        dest: "{{ project_path }}/ssl/private_key.key"
+        content: "{{ https_private_key }}"
+
+    - name: Create https certificate file
+      copy:
+        dest: "{{ project_path }}/ssl/certificate.crt"
+        content: "{{ https_certificate }}"
+
+    # - name: Create docker daemon.json file
+    #   copy:
+    #     dest: "/etc/docker/daemon.json"
+    #     content: |
+    #       {
+    #           "insecure-registries": [
+    #               "{{ docker_registry_url }}:{{ docker_registry_group_port }}",
+    #               "{{ docker_registry_url }}:{{ docker_registry_private_port }}"
+    #           ]
+    #       }
+
+    # - name: Restart docker service
+    #   systemd:
+    #     state: restarted
+    #     name: docker
+
+    - name: Login in docker group registry
+      docker_login:
+        registry: "{{ docker_registry_url }}:{{ docker_registry_group_port }}"
+        username: "{{ docker_registry_username }}"
+        password: "{{ docker_registry_password }}"
+        reauthorize: yes
+
+    - name: Login in docker private registry
+      docker_login:
+        registry: "{{ docker_registry_url }}:{{ docker_registry_private_port }}"
+        username: "{{ docker_registry_username }}"
+        password: "{{ docker_registry_password }}"
+        reauthorize: yes
+
+    - name: Start/Restart containers
+      docker_compose:
+        pull: yes
+        restarted: yes
+        project_src: "{{ project_path }}"
+      register: output
+
+    - debug:
+        var: output

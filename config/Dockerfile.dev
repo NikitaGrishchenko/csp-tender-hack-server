@@ -1,0 +1,40 @@
+FROM python:3.7.5-alpine
+
+WORKDIR /app/code
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# install global packages
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache  \
+    git \
+    postgresql-dev \
+    bash \
+    libc-dev \
+    libffi-dev \
+    mariadb-dev \
+    curl \
+    jpeg-dev \
+    zlib-dev \
+    gcc \
+    musl-dev \
+    cairo-dev \
+    pango-dev \
+    gdk-pixbuf-dev \
+    python3-dev \
+    nodejs \
+    libxml2 \
+    libxslt \
+    libxslt-dev \
+    make \
+    npm \
+    yarn \
+    msttcorefonts-installer fontconfig \
+    font-noto
+
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+ENV PATH="${PATH}:/root/.poetry/bin"
+
+COPY . .

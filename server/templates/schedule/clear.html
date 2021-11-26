@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %} {% trans "Очистить расписание" %} {% endblock title %}
+
+{% block content %}
+<style>
+*{
+  font-family: sans-serif;
+}
+.confirm__wrapper{
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  justify-content: center;
+  align-items: center;
+}
+.confirm__btn{
+  width: 100%;
+  border: none;
+  font-weight: 400;
+  background: #417690;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  padding: 10px 15px;
+  transition: .2s
+}
+.confirm__btn:hover{
+  background: #205067;
+}
+.confirm__link{
+  background: #79aec8;
+  display: block;
+  margin-top: 5px;
+  text-align: center;
+  text-decoration: none;
+  padding: 10px 0px;
+}
+.confirm__link:hover{
+  background: #609ab6;
+}
+</style>
+  <div
+    class="confirm__wrapper"
+  >
+    <form method="post">
+      {% csrf_token %}
+      <h2 class="confirm__title my-4">Очистить расписание?</h2>
+      <input class="confirm__btn" type="submit" value="Да" />
+      <a href="/" class="confirm__btn confirm__link"> {% trans "На главную" %} </a>
+    </form>
+  </div>
+{% endblock content %}

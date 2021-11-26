@@ -1,0 +1,175 @@
+# TODO: check HTTPS
+
+- hosts: all
+  vars:
+    # Переопределяем в AWX
+    vault_name: "vault_name"
+
+    # Секреты
+    secrets: "{{ lookup('hashi_vault', 'secret=web-projects/data/{{ vault_name }}:') }}"
+    https_secrets: "{{ lookup('hashi_vault', 'secret=global/data/https:') }}"
+    email_secrets: "{{ lookup('hashi_vault', 'secret=global/data/email:') }}"
+    git_secrets: "{{ lookup('hashi_vault', 'secret=CI-CD/data/gitlab:') }}"
+
+    # Сертификаты https
+    https_private_key: "{{ https_secrets|json_query('data.private_key') }}"
+    https_certificate: "{{ https_secrets|json_query('data.certificate') }}"
+
+    # Приватный ключ для доступа к репозиторию
+    git_prvate_key: "{{ git_secrets|json_query('data.private_key') }}"
+
+    # Базовые конфиги
+    project_base_path: /var/www
+    site_domain: "{{ secrets|json_query('data.site_domain') }}"
+    secret_key: "{{ secrets|json_query('data.secret_key') }}"
+    project_name: "{{ secrets|json_query('data.project_name') }}"
+    default_fixtures: "{{ secrets|json_query('data.default_fixtures')|default('', true) }}"
+    project_path: "{{ project_base_path }}/{{ project_name }}"
+
+    git_repo_url: "{{ secrets|json_query('data.git_ssh_url') }}"
+
+    # Конфиги email
+    email_port: "{{ email_secrets|json_query('data.port') }}"
+    email_host: "{{ email_secrets|json_query('data.host') }}"
+    email_protocol: "{{ email_secrets|json_query('data.protocol') }}"
+    email_name: "{{ secrets|json_query('data.email_name') }}"
+
+    # Конфиги для ansible
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_become_password: "{{ secrets|json_query('data.ssh_password') }}"
+
+    # Конфиги базы данных
+    db_type: "{{ secrets|json_query('data.db_type') }}"
+    db_host: "{{ secrets|json_query('data.db_host') }}"
+    db_port: "{{ secrets|json_query('data.db_port') }}"
+    db_name: "{{ secrets|json_query('data.db_name') }}"
+    db_user: "{{ secrets|json_query('data.db_user') }}"
+    db_password: "{{ secrets|json_query('data.db_password') }}"
+
+    # Конфиги администратора по умолчанию
+    admin_username: "{{ secrets|json_query('data.admin_username') }}"
+    admin_password: "{{ secrets|json_query('data.admin_password') }}"
+    admin_email: "{{ secrets|json_query('data.admin_email') }}"
+  environment:
+    PATH: "{{ ansible_env.PATH }}:{{ ansible_env.HOME }}/.local/bin/:{{ ansible_env.HOME }}/.poetry/bin"
+  tasks:
+    - name: Create ssh directory
+      file:
+        path: ~/.ssh/
+        state: directory
+
+    - name: Create project directory
+      file:
+        path: "{{ project_path }}"
+        state: directory
+
+    - name: Add gitlab ssh key
+      copy:
+        dest: ~/.ssh/id_rsa.gitlab
+        content: "{{ git_prvate_key }}"
+        mode: 0600
+
+    - name: Clone git repo
+      git:
+        accept_hostkey: yes
+        repo: "{{ git_repo_url }}"
+        key_file: ~/.ssh/id_rsa.gitlab
+        dest: "{{ project_path }}"
+
+    - name: Create databases if not exist
+      mysql_db:
+        name: "{{ db_name }}"
+        login_host: "{{ db_host }}"
+        login_port: "{{ db_port }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        state: present
+
+    - name: Create .env file
+      # https://github.com/ushahidi/ansible-dotenv-generator
+      include_role:
+        name: dotenv-generator
+      vars:
+        dotenv_sample: "{{ project_path }}/.env.example"
+        env:
+          SITE_DOMAIN: "{{ site_domain }}"
+          SECRET_KEY: "{{ secret_key }}"
+          DATABASE_URL: "{{ db_type }}://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
+          PROJECT_PATH: "{{ project_path }}"
+          ADMIN_USERNAME: "{{ admin_username }}"
+          ADMIN_PASSWORD: "{{ admin_password }}"
+          ADMIN_EMAIL: "{{ admin_email }}"
+          EMAIL_URL: "{{ email_protocol }}://{{ email_host }}:{{ email_port }}"
+          EMAIL_NAME: "{{ email_name }}"
+          EMAIL_MANAGER: "{{ admin_email }}"
+          DEFAULT_FIXTURES: "{{ default_fixtures }}"
+        dest: "{{ project_path }}/.env"
+
+    - name: Make install-prod
+      make:
+        chdir: "{{ project_path }}"
+        target: install-prod
+        file: "{{ project_path }}/Makefile"
+
+    - name: Make build
+      make:
+        chdir: "{{ project_path }}"
+        target: build
+        file: "{{ project_path }}/Makefile"
+
+    - name: Template a file nginx.conf
+      become: yes
+      template:
+        src: "../server/nginx.conf"
+        dest: "/etc/nginx/sites-available/{{ project_name }}.conf"
+
+    - name: Create a symbolic link nginx.conf
+      become: yes
+      file:
+        src: "/etc/nginx/sites-available/{{ project_name }}.conf"
+        dest: "/etc/nginx/sites-enabled/{{ project_name }}.conf"
+        state: link
+
+    - name: Create ssl directory
+      become: yes
+      file:
+        path: "/etc/nginx/ssl"
+        state: directory
+
+    - name: Create https private key file
+      become: yes
+      copy:
+        dest: "/etc/nginx/ssl/private_key.key"
+        content: "{{ https_private_key }}"
+
+    - name: Create https certificate file
+      become: yes
+      copy:
+        dest: "/etc/nginx/ssl/certificate.crt"
+        content: "{{ https_certificate }}"
+
+    - name: Template a file gunicorn.socket
+      become: yes
+      template:
+        src: "../server/gunicorn.socket"
+        dest: "/etc/systemd/system/gunicorn_{{ project_name }}.socket"
+
+    - name: Template a file gunicorn.service
+      become: yes
+      template:
+        src: "../server/gunicorn.service"
+        dest: "/etc/systemd/system/gunicorn_{{ project_name }}.service"
+
+    - name: Restart (Start) gunicorn.service
+      become: yes
+      systemd:
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+        name: gunicorn_{{ project_name }}.service
+
+    - name: Restart nginx
+      become: yes
+      systemd:
+        state: restarted
+        name: nginx
