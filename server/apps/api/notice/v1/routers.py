@@ -1,7 +1,9 @@
 from django.urls import path
 
+from .views import SendNoticeListAPIView
+
 app_name = "notice"
 
 urlpatterns = [
-    # path("", NoticeView.as_view(), name="index"),
+    path("list/", SendNoticeListAPIView.as_view()),
 ]

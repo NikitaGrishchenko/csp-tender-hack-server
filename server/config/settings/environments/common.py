@@ -17,8 +17,13 @@ TEMPLATES = [
         "DIRS": [
             TEMPLATES_DIR,
         ],
-        "APP_DIRS": True,
+        # "APP_DIRS": True,
         "OPTIONS": {
+            "loaders": [
+                "apptemplates.Loader",
+                "django.template.loaders.filesystem.Loader",
+                "django.template.loaders.app_directories.Loader",
+            ],
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
@@ -36,3 +41,5 @@ WSGI_APPLICATION = "config.wsgi.application"
 SITE_ID = 1
 MAIN_REDIRECT_URL = env("MAIN_REDIRECT_URL", default="https://rsue.ru")
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+X_FRAME_OPTIONS = "SAMEORIGIN"
+SILENCED_SYSTEM_CHECKS = ["security.W019"]

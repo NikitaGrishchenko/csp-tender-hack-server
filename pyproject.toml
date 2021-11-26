@@ -72,6 +72,9 @@ opencv-python = "^4.5.4"
 PassportEye = "^2.1.0"
 scikit-image = "0.17.2"
 dadata = "^21.10.1"
+django-admin-interface = "^0.18.2"
+django-apptemplates = "^1.5"
+pywebpush = "^1.14.0"
 
 
 

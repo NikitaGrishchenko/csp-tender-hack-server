@@ -1,3 +1,9 @@
-from rest_framework import views
+from rest_framework import generics
 
-# Create your REST views here.
+from ..models import SendNotice
+from .serializers import SendNoticeSerializer
+
+
+class SendNoticeListAPIView(generics.ListAPIView):
+    serializer_class = SendNoticeSerializer
+    queryset = SendNotice.objects.all()

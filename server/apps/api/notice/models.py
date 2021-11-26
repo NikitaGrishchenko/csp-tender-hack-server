@@ -47,14 +47,16 @@ class Notice(models.Model):
         max_length=350,
         null=True,
     )
-    img = models.ImageField(_("Картинка"), upload_to="notice-img")
+    img = models.ImageField(
+        _("Картинка"), upload_to="notice-img", null=True, blank=True
+    )
 
     def __str__(self):
         return f"{self.event} {self.number_version}"
 
     class Meta:
-        verbose_name = "Событие"
-        verbose_name_plural = "События"
+        verbose_name = "Уведомление"
+        verbose_name_plural = "Уведомления"
 
 
 class SendNotice(models.Model):
@@ -77,6 +79,12 @@ class SendNotice(models.Model):
         _("Дата отправки"),
         default=timezone.now,
     )
+
+    date_of_execution = models.DateField(
+        _("Дата исполнения"), null=True, blank=True
+    )
+
+    state = models.BooleanField(_("Статус"), default=False)
 
     def __str__(self):
         return f"{self.user} {self.notice}"
