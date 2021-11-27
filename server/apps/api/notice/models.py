@@ -92,12 +92,12 @@ class SendNotice(models.Model):
         on_delete=models.CASCADE,
     )
 
-    date_of_send = models.DateField(
+    date_of_send = models.DateTimeField(
         _("Дата отправки"),
         default=timezone.now,
     )
 
-    date_of_execution = models.DateField(
+    date_of_execution = models.DateTimeField(
         _("Дата исполнения"), null=True, blank=True
     )
 
