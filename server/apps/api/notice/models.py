@@ -35,7 +35,7 @@ class Event(models.Model):
         _("Приоритет"), choices=PRIORITY_CHOICES
     )
 
-    group = models.ForeignKey(GroupEvent, related_name='events', on_delete=models.SET_NULL, blank=True, null=True)
+    group = models.ForeignKey(GroupEvent, related_name='events', on_delete=models.SET_NULL, blank=True, null=True, verbose_name=_("Группа"))
 
     def __str__(self):
         return f"{self.title}"
