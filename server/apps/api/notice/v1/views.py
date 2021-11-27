@@ -15,7 +15,7 @@ class SendNoticeListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = SendNotice.objects.filter(user_id=user.pk)
+        queryset = SendNotice.objects.filter(user_id=user.pk).order_by('notice__event__priority', 'date_of_send')
         return queryset
 
 
