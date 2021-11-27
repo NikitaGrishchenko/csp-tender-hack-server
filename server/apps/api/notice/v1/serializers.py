@@ -1,6 +1,24 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from ..models import Event, Notice, SendNotice
+
+user = get_user_model()
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор пользователя
+    """
+
+    class Meta:
+        model = user
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+        ]
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -30,7 +48,8 @@ class SendNoticeSerializer(serializers.ModelSerializer):
     Сериализатор отправленных уведомлений
     """
 
-    notice = NoticeSerializer
+    notice = NoticeSerializer()
+    user = UserSerializer()
 
     class Meta:
         model = SendNotice

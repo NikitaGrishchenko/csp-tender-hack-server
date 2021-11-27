@@ -7,5 +7,9 @@ from .serializers import SendNoticeSerializer
 
 class SendNoticeListAPIView(generics.ListAPIView):
     serializer_class = SendNoticeSerializer
-    queryset = SendNotice.objects.all()
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = SendNotice.objects.filter(user_id=user.pk)
+        return queryset
