@@ -1,8 +1,19 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
-from ..models import SendNotice
-from .serializers import SendNoticeSerializer
+from ..models import SendNotice, GroupEvent
+from .serializers import SendNoticeSerializer, GroupEventSerializer
+
+
+class GroupsEventsView(generics.ListAPIView):
+    """
+    Список группы событий
+    """
+
+    serializer_class = GroupEventSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = GroupEvent.objects.all()
+
 
 
 class SendNoticeListAPIView(generics.ListAPIView):

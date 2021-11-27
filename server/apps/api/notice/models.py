@@ -11,6 +11,16 @@ class GroupEvent(models.Model):
 
     name = models.CharField(_("Наименование"), max_length=255, null=True)
 
+    def get_l_count(self, user):
+        return self.events.filter(notices__send_notices__user=user, priority=1).count()
+
+    def get_m_count(self, user):
+        return self.events.filter(notices__send_notices__user=user, priority=2).count()
+
+    def get_h_count(self, user):
+        return self.events.filter(notices__send_notices__user=user, priority=3).count()
+
+
     def __str__(self):
         return f"{self.name}"
 
@@ -54,6 +64,7 @@ class Notice(models.Model):
         Event,
         verbose_name=_("Событие"),
         on_delete=models.CASCADE,
+        related_name="notices"
     )
     number_version = models.IntegerField(_("Номер версии уведомления"))
     desc_version = models.CharField(
@@ -90,6 +101,7 @@ class SendNotice(models.Model):
         Notice,
         verbose_name=_("Отправленное уведомление"),
         on_delete=models.CASCADE,
+        related_name="send_notices"
     )
 
     date_of_send = models.DateTimeField(

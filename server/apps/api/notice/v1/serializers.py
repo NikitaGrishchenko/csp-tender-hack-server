@@ -66,3 +66,26 @@ class SendNoticeSerializer(serializers.ModelSerializer):
     class Meta:
         model = SendNotice
         fields = "__all__"
+
+
+class GroupEventSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор отправленных уведомлений
+    """
+
+    l = serializers.SerializerMethodField()
+    m = serializers.SerializerMethodField()
+    h = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GroupEvent
+        fields = "__all__"
+
+    def get_l(self, obj):
+        return obj.get_l_count(self.context["request"].user)
+
+    def get_m(self, obj):
+        return obj.get_m_count(self.context["request"].user)
+
+    def get_h(self, obj):
+        return obj.get_h_count(self.context["request"].user)
