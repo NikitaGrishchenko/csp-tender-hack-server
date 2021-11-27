@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from ..models import Event, Notice, SendNotice
+from ..models import Event, Notice, SendNotice, GroupEvent
 
 user = get_user_model()
 
@@ -21,10 +21,22 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
 
+class GroupEventSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор групп событий
+    """
+
+    class Meta:
+        model = GroupEvent
+        fields = "__all__"
+
+
 class EventSerializer(serializers.ModelSerializer):
     """
     Сериализатор событий
     """
+
+    group = GroupEventSerializer(read_only=True)
 
     class Meta:
         model = Event
@@ -36,7 +48,7 @@ class NoticeSerializer(serializers.ModelSerializer):
     Сериализатор уведомлений
     """
 
-    event = EventSerializer
+    event = EventSerializer(read_only=True)
 
     class Meta:
         model = Notice
