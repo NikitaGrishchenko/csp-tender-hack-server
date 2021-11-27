@@ -75,6 +75,7 @@ dadata = "^21.10.1"
 django-admin-interface = "^0.18.2"
 django-apptemplates = "^1.5"
 pywebpush = "^1.14.0"
+djangorestframework-simplejwt = "^5.0.0"
 
 
 

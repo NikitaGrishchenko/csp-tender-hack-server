@@ -20,6 +20,7 @@ DEFAULT_APPS = [
     "django_weasyprint",
     "easy_select2",
     "service_objects",
+    "rest_framework_simplejwt",
 ]
 
 PROJECT_APPS = [
