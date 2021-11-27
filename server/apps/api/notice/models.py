@@ -4,21 +4,38 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 
+class GroupEvent(models.Model):
+    """
+    Группа событий
+    """
+
+    name = models.CharField(_("Наименование"), max_length=255, null=True)
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = 'Группа событий'
+        verbose_name_plural = 'Группы событий'
+
+
 class Event(models.Model):
     """
     Модель события
     """
 
     PRIORITY_CHOICES = [
-        ("low", "Низкий приоритет"),
-        ("middle", "Средний приоритет"),
-        ("high", "Высокий приоритет"),
+        (1, "Низкий приоритет"),
+        (2, "Средний приоритет"),
+        (3, "Высокий приоритет"),
     ]
 
     title = models.CharField(_("Заголовок"), max_length=255, null=True)
-    priority = models.CharField(
-        _("Приоритет"), max_length=50, choices=PRIORITY_CHOICES
+    priority = models.IntegerField(
+        _("Приоритет"), choices=PRIORITY_CHOICES
     )
+
+    group = models.ForeignKey(GroupEvent, related_name='events', on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title}"
@@ -71,7 +88,7 @@ class SendNotice(models.Model):
     )
     notice = models.ForeignKey(
         Notice,
-        verbose_name=_("Отпарвленное уведомление"),
+        verbose_name=_("Отправленное уведомление"),
         on_delete=models.CASCADE,
     )
 
@@ -84,7 +101,8 @@ class SendNotice(models.Model):
         _("Дата исполнения"), null=True, blank=True
     )
 
-    state = models.BooleanField(_("Статус"), default=False)
+    is_viewed = models.BooleanField(_("Являеется просмотренным"), default=False)
+    is_archived = models.BooleanField(_("Являеется архивным"), default=False)
 
     def __str__(self):
         return f"{self.user} {self.notice}"
