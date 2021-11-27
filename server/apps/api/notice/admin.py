@@ -1,7 +1,18 @@
 from apps.core.utils.admin import BaseAdminMixin
 from django.contrib.admin import ModelAdmin, register
 
-from .models import Event, Notice, SendNotice
+from .models import Event, Notice, SendNotice, GroupEvent
+
+
+@register(GroupEvent)
+class GroupEventAdmin(ModelAdmin, BaseAdminMixin):
+    """
+    Админка групп событий
+    """
+
+    list_display = (
+        "name",
+    )
 
 
 @register(Event)
@@ -40,10 +51,12 @@ class SendNoticeAdmin(ModelAdmin, BaseAdminMixin):
         "user",
         "notice",
         "date_of_send",
-        "state",
+        "is_viewed",
+        "is_archived",
     )
     list_filter = (
         "user",
         "notice",
-        "state",
+        "is_viewed",
+        "is_archived",
     )
