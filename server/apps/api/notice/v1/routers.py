@@ -6,6 +6,7 @@ from .views import (
     NoticeOfOneGroupNoticeList,
     SendNoticeListAPIView,
     SendNoticeRetrieveAPIView,
+    SubscribeOnPush,
 )
 
 app_name = "notice"
@@ -16,4 +17,5 @@ urlpatterns = [
     path("detail/<int:pk>/", SendNoticeRetrieveAPIView.as_view()),
     path("all-group/", AllGroupNoticeList.as_view()),
     path("for-group/<int:group>/", NoticeOfOneGroupNoticeList.as_view()),
+    path("subscribe/push/", SubscribeOnPush.as_view()),
 ]

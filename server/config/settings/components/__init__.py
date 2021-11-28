@@ -7,3 +7,4 @@ from .logging import *
 from .paths import *
 from .rest_framework import *
 from .static import *
+from .webpush import *

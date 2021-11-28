@@ -5,7 +5,12 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group as BaseGroup
 from django.utils.translation import gettext_lazy as _
 
-from .models import ProxyGroup, User
+from .models import ProxyGroup, User, WebPushSubscription
+
+
+@admin.register(WebPushSubscription)
+class WebPushSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("endpoint",)
 
 
 @admin.register(User)
@@ -27,6 +32,7 @@ class UserAdmin(BaseAdminMixin, BaseUserAdmin):
             },
         ),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
+        (_("Web Push"), {"fields": ("webpush",)}),
     )
     add_fieldsets = (
         (

@@ -1,11 +1,16 @@
 from enum import unique
 
+from django.contrib.auth import get_user_model
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ..models import GroupEvent, SendNotice
-from .serializers import GroupEventSerializer, SendNoticeSerializer
+from .serializers import (
+    GroupEventSerializer,
+    SendNoticeSerializer,
+    SubscribeUserOnPushSerializer,
+)
 
 
 class GroupsEventsView(generics.ListAPIView):
@@ -113,3 +118,11 @@ class NoticeOfOneGroupNoticeList(generics.ListAPIView):
             if item["notice"]["event"]["group"]["id"] == group:
                 list_result.append(item)
         return Response(list_result)
+
+
+class SubscribeOnPush(generics.UpdateAPIView):
+    serializer_class = SubscribeUserOnPushSerializer
+
+    def get_queryset(self):
+        queryset = get_user_model().objects.all()
+        return queryset

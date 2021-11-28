@@ -14,6 +14,26 @@ class ProxyGroup(Group):
         verbose_name_plural = _("groups")
 
 
+class WebPushSubscription(models.Model):
+    """
+    Информация о подписке пользователя на Push
+    """
+
+    endpoint = models.URLField(
+        _("Endpoint URL"), max_length=5000, null=True, blank=True
+    )
+    key_auth = models.CharField(
+        _("Auth key"), max_length=500, null=True, blank=True
+    )
+    key_p256dh = models.CharField(
+        _("p256dh key"), max_length=500, null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = "Подписка пользователя на Push"
+        verbose_name_plural = "Подписки поьзователей на Push"
+
+
 class User(AbstractBaseUser, PermissionsMixin):
     username_validator = UnicodeUsernameValidator()
 
@@ -49,6 +69,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         ),
     )
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
+
+    webpush = models.ForeignKey(
+        WebPushSubscription,
+        verbose_name=_("WebPush Tokens"),
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
 
     objects = UserManager()
 

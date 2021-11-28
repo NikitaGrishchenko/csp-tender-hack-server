@@ -1,9 +1,34 @@
+from apps.api.auth.models import WebPushSubscription
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from ..models import Event, Notice, SendNotice, GroupEvent
+from ..models import Event, GroupEvent, Notice, SendNotice
 
 user = get_user_model()
+
+
+class WebPushSubscriptionSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор информации о подписке на Push
+    """
+
+    class Meta:
+        model = WebPushSubscription
+        fields = "__all__"
+
+
+class SubscribeUserOnPushSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор подписки пользователя на Push
+    """
+
+    webpush = WebPushSubscriptionSerializer()
+
+    class Meta:
+        model = user
+        fields = [
+            "webpush",
+        ]
 
 
 class UserSerializer(serializers.ModelSerializer):
