@@ -24,6 +24,13 @@ class SubscribeUserOnPushSerializer(serializers.ModelSerializer):
 
     webpush = WebPushSubscriptionSerializer()
 
+    def update(self, instance, validated_data):
+        webpush_data = validated_data.pop("webpush")
+        print(webpush_data)
+        instance.webpush = WebPushSubscription.objects.create(**webpush_data)
+        instance.save()
+        return instance
+
     class Meta:
         model = user
         fields = [

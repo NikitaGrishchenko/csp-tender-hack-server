@@ -25,7 +25,7 @@ class WebPushSubscription(models.Model):
     key_auth = models.CharField(
         _("Auth key"), max_length=500, null=True, blank=True
     )
-    key_p256dh = models.CharField(
+    key_secret = models.CharField(
         _("p256dh key"), max_length=500, null=True, blank=True
     )
 

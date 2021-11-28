@@ -120,9 +120,10 @@ class NoticeOfOneGroupNoticeList(generics.ListAPIView):
         return Response(list_result)
 
 
-class SubscribeOnPush(generics.UpdateAPIView):
+class SubscribeOnPush(generics.RetrieveUpdateAPIView):
     serializer_class = SubscribeUserOnPushSerializer
+    queryset = get_user_model().objects.all()
 
-    def get_queryset(self):
-        queryset = get_user_model().objects.all()
-        return queryset
+    def get_object(self):
+        return get_user_model().objects.get(pk=self.request.user.pk)
+
