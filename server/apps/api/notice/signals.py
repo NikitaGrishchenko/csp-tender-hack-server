@@ -16,14 +16,11 @@ def send_push(instance, *args, **kwargs):
         subscription_info={
             "endpoint": instance.user.webpush.endpoint,
             "keys": {
-                "p256dh": instance.user.webpush.key_p256dh,
+                "p256dh": instance.user.webpush.key_secret,
                 "auth": instance.user.webpush.key_auth,
             },
         },
-        data={
-            "title": instance.notice.event.title,
-            "message": instance.notice.text,
-        },
+        data=f"{instance.notice.event.title}\n{instance.notice.text}",
         vapid_private_key="al8PNtoc6B4kJ1Nncad_vMMMkZ6rLWkHyiujBlqSi38",
         vapid_claims={"sub": "mailto:pen.egor2002@gmail.com"},
     )
