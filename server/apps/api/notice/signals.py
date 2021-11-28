@@ -20,7 +20,10 @@ def send_push(instance, *args, **kwargs):
                 "auth": instance.user.webpush.key_auth,
             },
         },
-        data="rere",
+        data={
+            "title": instance.notice.event.title,
+            "message": instance.notice.text,
+        },
         vapid_private_key="al8PNtoc6B4kJ1Nncad_vMMMkZ6rLWkHyiujBlqSi38",
         vapid_claims={"sub": "mailto:pen.egor2002@gmail.com"},
     )
